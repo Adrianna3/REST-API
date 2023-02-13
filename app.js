@@ -1,6 +1,7 @@
 const express = require("express");
 const logger = require("morgan");
 const cors = require("cors");
+const path = require("path");
 
 const contactsRouter = require("./routes/api/contacts");
 const usersRouter = require("./routes/api/users");
@@ -14,6 +15,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+app.use(
+  "/avatars",
+  express.static(path.join(process.cwd(), "public", "avatars"))
+);
 app.use("/api/contacts", contactsRouter);
 app.use("/api/users", usersRouter);
 
@@ -26,7 +31,7 @@ app.use((_, res) => {
   });
 });
 
-app.use((e, _, res, __) => {
+app.use((e, _, res) => {
   console.log(e.stack);
   res.status(500).json({
     status: "fail",

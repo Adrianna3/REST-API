@@ -3,6 +3,11 @@ const service = require("../service/users.js");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const secret = process.env.SECRET;
+const { avatarDir } = require("../middlewares/upload.js");
+const { editAvatar } = require("../utils/editAvatar.js");
+const gravatar = require("gravatar");
+const path = require("path");
+const fs = require("fs/promises");
 
 const get = async (req, res, next) => {
   try {
@@ -21,7 +26,8 @@ const register = async (req, res, next) => {
   if (user) return res.status(409).json({ message: "Email in use" });
 
   try {
-    const newUser = new User({ email });
+    const avatarURL = gravatar.url(email, { s: "250", d: "mp" });
+    const newUser = new User({ email, avatarURL });
     newUser.setPassword(password);
     await newUser.save();
     res.status(201).json({
@@ -81,4 +87,20 @@ const current = async (req, res, next) => {
   }
 };
 
-module.exports = { register, get, login, logout, current };
+const updateAvatar = async (req, res, next) => {
+  try {
+    const { path: tmpPath, filename } = req.file;
+    const avatarURL = path.join(avatarDir, filename);
+    editAvatar(tmpPath, avatarURL);
+    await fs.unlink(tmpPath);
+    const user = await service.getUser({ token: req.user.token });
+    if (!user) return res.status(401).json({ message: "Not authorized" });
+    const newUser = await service.updateUser(user.id, { avatarURL });
+    res.status(200).json({ avatarURL: newUser.avatarURL });
+  } catch (e) {
+    await fs.unlink(tmpPath);
+    next(e);
+  }
+};
+
+module.exports = { register, get, login, logout, current, updateAvatar };
