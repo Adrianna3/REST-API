@@ -31,7 +31,7 @@ app.use((_, res) => {
   });
 });
 
-app.use((e, _, res, __) => {
+app.use((e, _, res) => {
   console.log(e.stack);
   res.status(500).json({
     status: "fail",
@@ -41,4 +41,6 @@ app.use((e, _, res, __) => {
   });
 });
 
+
 module.exports = app;
+

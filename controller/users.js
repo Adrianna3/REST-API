@@ -26,6 +26,7 @@ const register = async (req, res, next) => {
   const user = await service.getUser({ email });
 
   if (user) return res.status(409).json({ message: "Email in use" });
+
   const vfToken = uuidv4();
   try {
     const avatarURL = gravatar.url(email, { s: "250", d: "mp" });
@@ -33,6 +34,7 @@ const register = async (req, res, next) => {
     newUser.setPassword(password);
     await newUser.save();
     await sendMail(email, vfToken);
+    
     res.status(201).json({
       user: {
         email,
@@ -151,4 +153,3 @@ module.exports = {
   updateAvatar,
   verificationLink,
   repeatVerification
-};
