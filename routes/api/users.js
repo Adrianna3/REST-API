@@ -22,6 +22,12 @@ router.patch(
   userController.updateAvatar
 );
 
-module.exports = router;
+router.get("/verify/:verificationToken", userController.verificationLink);
 
-// C:\Users\lenovo\Postman\files
+router.post(
+  "/verify",
+  validateData(userValidate),
+  userController.repeatVerification
+);
+
+module.exports = router;
