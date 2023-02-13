@@ -18,6 +18,3 @@ router.get("/current", auth, userController.current);
 router.patch("/avatars", auth, upload.single("avatar"), userController.updateAvatar);
 
 module.exports = router;
-
-
-// C:\Users\lenovo\Postman\files
