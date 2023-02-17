@@ -8,6 +8,8 @@ const { editAvatar } = require("../utils/editAvatar.js");
 const gravatar = require("gravatar");
 const path = require("path");
 const fs = require("fs/promises");
+const { sendMail } = require("../utils/sendVerifyMail.js");
+const { v4: uuidv4 } = require("uuid");
 
 const get = async (req, res, next) => {
   try {
@@ -25,11 +27,14 @@ const register = async (req, res, next) => {
 
   if (user) return res.status(409).json({ message: "Email in use" });
 
+  const vfToken = uuidv4();
   try {
     const avatarURL = gravatar.url(email, { s: "250", d: "mp" });
-    const newUser = new User({ email, avatarURL });
+    const newUser = new User({ email, avatarURL, verificationToken: vfToken });
     newUser.setPassword(password);
     await newUser.save();
+    await sendMail(email, vfToken);
+    
     res.status(201).json({
       user: {
         email,
@@ -103,4 +108,48 @@ const updateAvatar = async (req, res, next) => {
   }
 };
 
-module.exports = { register, get, login, logout, current, updateAvatar };
+const verificationLink = async (req, res, next) => {
+  try {
+    const { verificationToken } = req.params;
+    const user = await service.getUser({ verificationToken });
+    if (!user) return res.status(404).json({ message: "User not found" });
+    await User.findByIdAndUpdate(
+      user.id,
+      { verify: true, verificationToken: null },
+      { new: true }
+    );
+    res.status(200).json({ message: "Verification successful" });
+  } catch (e) {
+    next(e);
+  }
+};
+
+const repeatVerification = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email)
+      return res.status(400).json({ message: "missing required field email" });
+    const user = await service.getUser({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.verify)
+      return res
+        .status(400)
+        .json({ message: "Verification has already been passed" });
+
+    await sendMail(email, user.verificationToken);
+    res.status(200).json({ message: "Verification email sent" });
+  } catch (e) {
+    next(e);
+  }
+};
+
+
+module.exports = {
+  register,
+  get,
+  login,
+  logout,
+  current,
+  updateAvatar,
+  verificationLink,
+  repeatVerification

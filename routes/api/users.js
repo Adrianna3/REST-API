@@ -15,6 +15,19 @@ router.get("/logout", auth, userController.logout);
 
 router.get("/current", auth, userController.current);
 
-router.patch("/avatars", auth, upload.single("avatar"), userController.updateAvatar);
+router.patch(
+  "/avatars",
+  auth,
+  upload.single("avatar"),
+  userController.updateAvatar
+);
+
+router.get("/verify/:verificationToken", userController.verificationLink);
+
+router.post(
+  "/verify",
+  validateData(userValidate),
+  userController.repeatVerification
+);
 
 module.exports = router;
